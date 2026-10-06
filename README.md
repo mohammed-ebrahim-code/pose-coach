@@ -1,0 +1,1 @@
+this project as a start is going to detect joints and decided wither a set of exersises are done in good form or bad form
