@@ -30,7 +30,10 @@ PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
 VisionRunningMode = mp.tasks.vision.RunningMode
 
 coordinates = (50, 100) 
-coordinates_1 = (0,0) 
+coordinates_1 = (20,40) 
+coordinates_2 = (50, 200) 
+coordinates_3 = (50, 250) 
+
 
 font_scale = 1
 font = cv.FONT_HERSHEY_SIMPLEX
@@ -44,6 +47,9 @@ options = PoseLandmarkerOptions(
 
 last_frame_timestamp_ms = 0
 
+DOWN = 90 
+UP = 160
+
 LEFT_SHOULDER = 11
 LEFT_ELBOW = 13
 LEFT_WRIST = 15
@@ -51,6 +57,11 @@ LEFT_WRIST = 15
 RIGHT_SHOULDER = 12
 RIGHT_ELBOW = 14
 RIGHT_WRIST = 16
+
+landmarks = None
+reps = 0
+stage = "up"
+
 
 connections = [(11, 13), (13, 15), (12,14), (14,16), (11,23), (12,24), (23,24), (23,25), (24,26), (25,27), (26,28),(11,12)]
 
@@ -62,9 +73,11 @@ with PoseLandmarker.create_from_options(options) as landmarker:
     start_time = time.monotonic()
 
     while True:
+        angles_visiblility_r = 0
+        angles_visiblility_l = 0
         right_arm_angle = None
         left_arm_angle = None
-
+        angle = None
         # Capture frame-by-frame
         ret, frame = cap.read()
 
@@ -130,16 +143,46 @@ with PoseLandmarker.create_from_options(options) as landmarker:
                 
                 left_arm_angle = round(calculate_angle(ls , le , lw))
                 left_arm_angle_s = str(left_arm_angle)
-                
+
+        for l in (landmarks[RIGHT_ELBOW], landmarks[RIGHT_SHOULDER], landmarks[RIGHT_WRIST]):
+            angles_visiblility_r += l.visibility
+        angle_v_r = angles_visiblility_r / 3
+
+
+        for l in (landmarks[LEFT_ELBOW], landmarks[LEFT_SHOULDER], landmarks[LEFT_WRIST]):
+            angles_visiblility_l += l.visibility
+        angle_v_l = angles_visiblility_l / 3
+
+        if angle_v_l > angle_v_r:
+            angle = left_arm_angle
+        else:
+            angle = right_arm_angle
+
+
+        if angle is not None:
+            if angle < DOWN and stage == "up":
+                stage = "down"
+            if angle > UP and stage == "down":
+                stage = "up"
+                reps += 1
+
+
         frame = cv.flip(frame, 1)
-        
+        rep_count = f"Reps :{str(reps)}"
         text_to_display = f"FPS :{str(fps)}"
+
         cv.putText(frame, text_to_display, coordinates, font, font_scale, color, thickness, cv.LINE_AA)
+
+
+        cv.putText(frame, rep_count, coordinates_2, font, font_scale, color, thickness, cv.LINE_AA)
+
+        cv.putText(frame, stage, coordinates_3, font, font_scale, color, thickness, cv.LINE_AA)
 
         if right_arm_angle is not None:
             cv.putText(frame, right_arm_angle_s, position_r, font, font_scale, color, thickness, cv.LINE_AA)
+
         if left_arm_angle is not None:
-                    cv.putText(frame, left_arm_angle_s, position_l, font, font_scale, color, thickness, cv.LINE_AA)
+            cv.putText(frame, left_arm_angle_s, position_l, font, font_scale, color, thickness, cv.LINE_AA)
         
         text_to_display_angle = f"R :{str(right_arm_angle)}    L :{str(left_arm_angle)}"
         cv.putText(frame, text_to_display_angle, coordinates_1, font, font_scale, color, thickness, cv.LINE_AA)
@@ -149,6 +192,8 @@ with PoseLandmarker.create_from_options(options) as landmarker:
         cv.imshow('frame', frame)
         if cv.waitKey(1) == ord('q'):
             break
+        if cv.waitKey(1) == ord('r'):
+            reps = 0
 
         
 # When everything done, release the capture
