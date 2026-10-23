@@ -76,14 +76,14 @@ stage = "up"
 
 REP_TEXT = "Good Rep"
 REP_TEXT1 = "Bad Rep"
-ERROR_TEXT = "show all joins on screen"
+ERROR_TEXT = "show all joints on screen"
 
 lowest_body_angle = 1000
 
 time_end_rep = 0
 
 last_rep = None
-
+show_error = False
 connections = [(11, 13), (13, 15), (12,14), (14,16), (11,23), (12,24), (23,24), (23,25), (24,26), (25,27), (26,28),(11,12)]
 
 with PoseLandmarker.create_from_options(options) as landmarker:
@@ -94,6 +94,7 @@ with PoseLandmarker.create_from_options(options) as landmarker:
     start_time = time.monotonic()
 
     while True:
+        body_visible = False
         current_time = time.monotonic()
         angles_visiblility_r = 0
         angles_visiblility_l = 0
@@ -175,35 +176,35 @@ with PoseLandmarker.create_from_options(options) as landmarker:
                 angles_visiblility_l += l.visibility
             angle_v_l = angles_visiblility_l / 3
 
-        if all(l.visibility > VISIBILITY for l in [landmarks[LEFT_SHOULDER], landmarks[LEFT_ANKLE], landmarks[LEFT_HIP]]):
-            ls = np.array(to_pixel(landmarks[LEFT_SHOULDER],width,height))
-            la = np.array(to_pixel(landmarks[LEFT_ANKLE],width,height))
-            lh = np.array(to_pixel(landmarks[LEFT_HIP],width,height))
-                
-            body_angle = round(calculate_angle(ls , lh , la))
-            lowest_body_angle = min(body_angle, lowest_body_angle)
-            form = "CD"
+            if all(l.visibility > VISIBILITY for l in [landmarks[LEFT_SHOULDER], landmarks[LEFT_ANKLE], landmarks[LEFT_HIP]]):
+                ls = np.array(to_pixel(landmarks[LEFT_SHOULDER],width,height))
+                la = np.array(to_pixel(landmarks[LEFT_ANKLE],width,height))
+                lh = np.array(to_pixel(landmarks[LEFT_HIP],width,height))
+                    
+                body_angle = round(calculate_angle(ls , lh , la))
+                lowest_body_angle = min(body_angle, lowest_body_angle)
+                body_visible = True
 
-        elif all(l.visibility > VISIBILITY for l in [landmarks[RIGHT_SHOULDER], landmarks[RIGHT_ANKLE], landmarks[RIGHT_HIP]]):
-            rs = np.array(to_pixel(landmarks[RIGHT_SHOULDER],width,height))
-            ra = np.array(to_pixel(landmarks[RIGHT_ANKLE],width,height))
-            rh = np.array(to_pixel(landmarks[RIGHT_HIP],width,height))
-                
-            body_angle = round(calculate_angle(rs , rh , ra))
-            lowest_body_angle = min(body_angle, lowest_body_angle)
-            form = "CD"
+            elif all(l.visibility > VISIBILITY for l in [landmarks[RIGHT_SHOULDER], landmarks[RIGHT_ANKLE], landmarks[RIGHT_HIP]]):
+                rs = np.array(to_pixel(landmarks[RIGHT_SHOULDER],width,height))
+                ra = np.array(to_pixel(landmarks[RIGHT_ANKLE],width,height))
+                rh = np.array(to_pixel(landmarks[RIGHT_HIP],width,height))
+                    
+                body_angle = round(calculate_angle(rs , rh , ra))
+                lowest_body_angle = min(body_angle, lowest_body_angle)
+                body_visible = True
 
-        else:
-            form = "CND"
-        if angle_v_l > angle_v_r:
-            angle = left_arm_angle
+            else:
+                body_visible = False
+            if angle_v_l > angle_v_r:
+                angle = left_arm_angle
 
-        else:
-            angle = right_arm_angle
+            else:
+                angle = right_arm_angle
 
 
 
-        if angle is not None and form == "CD":
+        if angle is not None and body_visible == True:
             if angle < DOWN and stage == "up":
                 stage = "down"
             if angle > UP and stage == "down":
@@ -219,12 +220,15 @@ with PoseLandmarker.create_from_options(options) as landmarker:
 
                 time_end_rep = time.monotonic()
         else:
+            show_error = True
+        frame = cv.flip(frame, 1)
+
+        if show_error == True:
             cv.putText(frame, ERROR_TEXT, ERROR_POS, font, font_scale, colorR , thickness, cv.LINE_AA)
 
-        frame = cv.flip(frame, 1)
-        rep_count = f"Good Reps :{str(good_reps)} Bad Reps :{str(bad_reps)}"
+        rep_count = f"Good Reps :{good_reps} Bad Reps :{bad_reps}"
 
-        text_to_display = f"FPS :{str(fps)}"
+        text_to_display = f"FPS :{fps}"
 
         if current_time - time_end_rep < 1:
             if last_rep == 'good':
@@ -247,7 +251,7 @@ with PoseLandmarker.create_from_options(options) as landmarker:
         if left_arm_angle is not None:
             cv.putText(frame, left_arm_angle_s, position_l, font, font_scale, color, thickness, cv.LINE_AA)
         
-        text_to_display_angle = f"R :{str(right_arm_angle)}    L :{str(left_arm_angle)}"
+        text_to_display_angle = f"R :{right_arm_angle}    L :{left_arm_angle}"
         cv.putText(frame, text_to_display_angle, L_R_ANGLE_POS, font, font_scale, color, thickness, cv.LINE_AA)
 
 
@@ -255,8 +259,6 @@ with PoseLandmarker.create_from_options(options) as landmarker:
         cv.imshow('frame', frame)
 
         key = cv.waitKey(1) & 0xFF
-        if cv.waitKey(1) == ord('q'):
-            break
         if key == ord('q'):
             break 
         elif key == ord('r'):
