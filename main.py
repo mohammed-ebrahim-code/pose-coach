@@ -13,8 +13,8 @@ def calculate_angle(a,b,c):
     bc_len = np.linalg.norm(bc)
     val = np.clip(top / (ba_len * bc_len), -1 , 1)
     angle_radians = np.arccos(val)
-    angle_dgree = np.degrees(angle_radians)
-    return angle_dgree
+    angle_degree = np.degrees(angle_radians)
+    return angle_degree
 
 def to_pixel(landmark , width , height):
     pixel_x = (int(landmark.x * width))
@@ -95,9 +95,11 @@ with PoseLandmarker.create_from_options(options) as landmarker:
 
     while True:
         body_visible = False
+        show_error = False
+
         current_time = time.monotonic()
-        angles_visiblility_r = 0
-        angles_visiblility_l = 0
+        angle_visibility_r = 0
+        angle_visibility_l = 0
         right_arm_angle = None
         left_arm_angle = None
         angle = None
@@ -168,34 +170,44 @@ with PoseLandmarker.create_from_options(options) as landmarker:
                 left_arm_angle_s = str(left_arm_angle)
 
             for l in (landmarks[RIGHT_ELBOW], landmarks[RIGHT_SHOULDER], landmarks[RIGHT_WRIST]):
-                angles_visiblility_r += l.visibility
-            angle_v_r = angles_visiblility_r / 3
+                angle_visibility_r += l.visibility
+            angle_v_r = angle_visibility_r / 3
 
 
             for l in (landmarks[LEFT_ELBOW], landmarks[LEFT_SHOULDER], landmarks[LEFT_WRIST]):
-                angles_visiblility_l += l.visibility
-            angle_v_l = angles_visiblility_l / 3
+                angle_visibility_l += l.visibility
+            angle_v_l = angle_visibility_l / 3
 
-            if all(l.visibility > VISIBILITY for l in [landmarks[LEFT_SHOULDER], landmarks[LEFT_ANKLE], landmarks[LEFT_HIP]]):
-                ls = np.array(to_pixel(landmarks[LEFT_SHOULDER],width,height))
-                la = np.array(to_pixel(landmarks[LEFT_ANKLE],width,height))
-                lh = np.array(to_pixel(landmarks[LEFT_HIP],width,height))
-                    
-                body_angle = round(calculate_angle(ls , lh , la))
-                lowest_body_angle = min(body_angle, lowest_body_angle)
-                body_visible = True
+            
+            if angle_v_l > angle_v_r:
+                angle = left_arm_angle
+                if all(l.visibility > VISIBILITY for l in [landmarks[LEFT_SHOULDER], landmarks[LEFT_ANKLE], landmarks[LEFT_HIP]]):
+                    ls = np.array(to_pixel(landmarks[LEFT_SHOULDER],width,height))
+                    la = np.array(to_pixel(landmarks[LEFT_ANKLE],width,height))
+                    lh = np.array(to_pixel(landmarks[LEFT_HIP],width,height))
+                        
+                    body_angle_l = round(calculate_angle(ls , lh , la))
+                    lowest_body_angle = min(body_angle_l, lowest_body_angle)
 
-            elif all(l.visibility > VISIBILITY for l in [landmarks[RIGHT_SHOULDER], landmarks[RIGHT_ANKLE], landmarks[RIGHT_HIP]]):
-                rs = np.array(to_pixel(landmarks[RIGHT_SHOULDER],width,height))
-                ra = np.array(to_pixel(landmarks[RIGHT_ANKLE],width,height))
-                rh = np.array(to_pixel(landmarks[RIGHT_HIP],width,height))
-                    
-                body_angle = round(calculate_angle(rs , rh , ra))
-                lowest_body_angle = min(body_angle, lowest_body_angle)
-                body_visible = True
+                    body_visible = True
+                else:
+                    body_visible = False
 
             else:
-                body_visible = False
+                angle = right_arm_angle
+                if all(l.visibility > VISIBILITY for l in [landmarks[RIGHT_SHOULDER], landmarks[RIGHT_ANKLE], landmarks[RIGHT_HIP]]):
+                    rs = np.array(to_pixel(landmarks[RIGHT_SHOULDER],width,height))
+                    ra = np.array(to_pixel(landmarks[RIGHT_ANKLE],width,height))
+                    rh = np.array(to_pixel(landmarks[RIGHT_HIP],width,height))
+                        
+                    body_angle_r = round(calculate_angle(rs , rh , ra))
+                    lowest_body_angle = min(body_angle_r, lowest_body_angle)
+
+                    body_visible = True
+
+                else:
+                    body_visible = False
+
             if angle_v_l > angle_v_r:
                 angle = left_arm_angle
 
@@ -204,7 +216,7 @@ with PoseLandmarker.create_from_options(options) as landmarker:
 
 
 
-        if angle is not None and body_visible == True:
+        if angle is not None and body_visible:
             if angle < DOWN and stage == "up":
                 stage = "down"
             if angle > UP and stage == "down":
@@ -212,18 +224,16 @@ with PoseLandmarker.create_from_options(options) as landmarker:
                 if lowest_body_angle < SAG_ANGLE:
                     bad_reps += 1
                     last_rep = 'bad'
-                    lowest_body_angle = 1000
                 else:
                     good_reps += 1
                     last_rep = 'good'
-                    lowest_body_angle = 1000
-
+                lowest_body_angle = 1000
                 time_end_rep = time.monotonic()
         else:
             show_error = True
         frame = cv.flip(frame, 1)
 
-        if show_error == True:
+        if show_error:
             cv.putText(frame, ERROR_TEXT, ERROR_POS, font, font_scale, colorR , thickness, cv.LINE_AA)
 
         rep_count = f"Good Reps :{good_reps} Bad Reps :{bad_reps}"
