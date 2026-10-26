@@ -1,3 +1,15 @@
+# Python
 venv/
 __pycache__/
-__pycache__
+
+# Model (download link in README)
+models/
+
+# Personal files: videos of me, test results, saved output
+videos/
+output/
+results/
+
+# Private notes
+journal.md
+CHANGES.md
