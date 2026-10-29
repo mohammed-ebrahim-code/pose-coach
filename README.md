@@ -79,7 +79,7 @@ python main.py
 ## Read more
 
 - Learn article: [Your Camera as a Coach](https://medium.com/@m.ebrahim.alzaabi/your-camera-as-a-coach-how-ai-pose-estimation-could-help-beginners-train-with-correct-form-325d17dc24f6)
-- Replicate article: [FILL: link]
+- Replicate article: (Soon)
 - Demo video: [YouTube](https://www.youtube.com/watch?v=xId2xa9K3IY)
 
 Mohammed Ebrahim AlZaabi · TKS Dubai
