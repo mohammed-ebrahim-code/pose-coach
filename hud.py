@@ -12,7 +12,7 @@ import cv2 as cv
 WHITE = (240, 240, 240)
 GREY = (170, 170, 170)
 DARK = (22, 22, 22)
-GREEN = (123, 198, 122)    # same green as the presentation (#7BC67A)
+GREEN = (123, 198, 122)    # green (#7BC67A)
 RED = (53, 107, 255)       # orange-red (#FF6B35)
 AMBER = (65, 184, 245)     # warning yellow (#F5B841)
 BLUE = (247, 195, 79)      # tracked arm (#4FC3F7)

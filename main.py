@@ -17,7 +17,7 @@ def calculate_angle(a, b, c):
     top = np.dot(ba, bc)
     ba_len = np.linalg.norm(ba)
     bc_len = np.linalg.norm(bc)
-    val = np.clip(top / (ba_len * bc_len + 1e-6), -1, 1) 
+    val = np.clip(top / (ba_len * bc_len + 1e-6), -1, 1)
     angle_radians = np.arccos(val)
     angle_degree = np.degrees(angle_radians)
     return angle_degree
@@ -29,19 +29,20 @@ def to_pixel(landmark, width, height):
     return (pixel_x, pixel_y)
 
 
-VIDEO_PATH = None
-SAVE_OUTPUT = False
-SAVE_LOG = False
-CAMERA_SIZE = (1280, 720)
-MAX_WIDTH = 1280
-OUTPUT_FPS = 30
+# ---- Settings ----
+VIDEO_PATH = None            # None = webcam, or a file like "videos/pushups.mp4"
+SAVE_OUTPUT = False          # True = save what the window shows to output/
+SAVE_LOG = False             # True = save every rep to results/ as a CSV
+CAMERA_SIZE = (1280, 720)    # webcam resolution to ask for
+MAX_WIDTH = 1280             # shrink bigger videos so they run faster
+OUTPUT_FPS = 30              # frame rate of the saved webcam video
 
-DOWN = 90
-UP = 160
-SAG_ANGLE = 155
-BODY_CHECK_ANGLE = 130
-VISIBILITY = 0.5
-FEEDBACK_SECONDS = 1
+DOWN = 90                    # elbow below this = bottom of the rep
+UP = 160                     # elbow back above this = rep counted
+SAG_ANGLE = 155              # lowest body angle below this = hips sagging
+BODY_CHECK_ANGLE = 130       # only judge the body once the elbow is below this
+VISIBILITY = 0.5             # ignore joints the model is less sure about than this
+FEEDBACK_SECONDS = 1         # how long GOOD REP / HIPS SAGGING stays on screen
 
 LEFT_SHOULDER = 11
 LEFT_ELBOW = 13
@@ -60,6 +61,8 @@ CONNECTIONS = [(11, 13), (13, 15), (12, 14), (14, 16), (11, 23), (12, 24), (23, 
 
 BASE_DIR = Path(__file__).parent
 model_path = str((BASE_DIR / "models/pose_landmarker_full.task").resolve())
+if not Path(model_path).exists():
+    raise SystemExit("Model not found. Download pose_landmarker_full.task into the models/ folder (link in the README).")
 BaseOptions = mp.tasks.BaseOptions
 PoseLandmarker = mp.tasks.vision.PoseLandmarker
 PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
@@ -88,8 +91,7 @@ with PoseLandmarker.create_from_options(options) as landmarker:
     else:
         cap = cv.VideoCapture(str(BASE_DIR / VIDEO_PATH))
     if not cap.isOpened():
-        print("Cannot open camera / video")
-        exit()
+        raise SystemExit("Cannot open camera / video. Check VIDEO_PATH, or that no other app is using the webcam.")
     video_fps = cap.get(cv.CAP_PROP_FPS) or 30
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -109,8 +111,6 @@ with PoseLandmarker.create_from_options(options) as landmarker:
     frame_number = 0
 
     while True:
-        right_arm_angle = None
-        left_arm_angle = None
         angle = None
         body_angle = None
         body_visible = False
@@ -121,7 +121,7 @@ with PoseLandmarker.create_from_options(options) as landmarker:
 
         ret, frame = cap.read()
         if not ret:
-            print("Can't receive frame (stream end?). Exiting ...")
+            print("No more frames (end of the video, or the camera stopped).")
             break
         height, width = frame.shape[:2]
         if width > MAX_WIDTH:
@@ -137,7 +137,7 @@ with PoseLandmarker.create_from_options(options) as landmarker:
         if frame_timestamp_ms <= last_frame_timestamp_ms:
             continue
         last_frame_timestamp_ms = frame_timestamp_ms
-        t = frame_timestamp_ms / 1000  
+        t = frame_timestamp_ms / 1000
 
         if now > last_clock:
             fps = round(0.9 * fps + 0.1 * (1 / (now - last_clock))) if fps else round(1 / (now - last_clock))
@@ -228,7 +228,6 @@ with PoseLandmarker.create_from_options(options) as landmarker:
                 writer = cv.VideoWriter(str(BASE_DIR / f"output/run_{stamp}.mp4"), cv.VideoWriter_fourcc(*"mp4v"),
                                         out_fps, (width, height))
             if USE_WEBCAM:
-
                 frames_due = int((now - start_time) * OUTPUT_FPS) + 1 - frames_written
                 for _ in range(max(0, frames_due)):
                     writer.write(frame)
