@@ -3,6 +3,8 @@
 Pose Coach watches push-ups from the side through a webcam or a video file. It counts only **full** reps and flags reps where the **hips sag**. I built it from scratch in Python for my replicate project at TKS (The Knowledge Society) Dubai.
 
 
+▶ **[Watch the 3-minute demo video](https://www.youtube.com/watch?v=xId2xa9K3IY)**
+
 ## Results
 
 **My own tests** (laptop camera on the floor, side view):
@@ -14,7 +16,7 @@ Pose Coach watches push-ups from the side through a webcam or a video file. It c
 | Reps with sagging hips flagged | **5 / 5** |
 | Good reps judged correctly | **10 / 10** after tuning the threshold to 155° (8 / 10 before) |
 
-**Someone else's video**  **4 / 4** reps counted, all judged good. This test also found a bug that my own tests missed: getting into position with raised hips was being counted against rep 1. I fixed it with `BODY_CHECK_ANGLE`.
+**Someone else's video** ([free push-up video on Pexels](https://www.pexels.com/video/4742661/)): **4 / 4** reps counted, all judged good. This test also found a bug that my own tests missed: getting into position with raised hips was being counted against rep 1. I fixed it with `BODY_CHECK_ANGLE`.
 
 ## How it works
 
@@ -28,11 +30,13 @@ Pose Coach watches push-ups from the side through a webcam or a video file. It c
 
 ## Run it
 
-```
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-```
+ Tested on Windows with Python 3.14.5
+
+   ```
+   python -m venv venv
+   venv\Scripts\activate          # Mac/Linux: source venv/bin/activate
+   pip install -r requirements.txt
+   ```
 
 Download the model, [pose_landmarker_full.task](https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task), into a `models/` folder. Then:
 
@@ -70,12 +74,12 @@ python main.py
 ## Credits
 
 - **Pose model:** [Google MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker) (Apache 2.0)
-- The pose logic, angle math, rep counter and form check are my own work. The on-screen display (`hud.py`) was built with AI assistance.
+- The pose logic, angle math, rep counter and form check are my own work. The on-screen display (`hud.py`) and the recording and logging features were built with AI assistance.
 
 ## Read more
 
 - Learn article: [Your Camera as a Coach](https://medium.com/@m.ebrahim.alzaabi/your-camera-as-a-coach-how-ai-pose-estimation-could-help-beginners-train-with-correct-form-325d17dc24f6)
 - Replicate article: [FILL: link]
-- Demo video: [FILL: link]
+- Demo video: [YouTube](https://www.youtube.com/watch?v=xId2xa9K3IY)
 
 Mohammed Ebrahim AlZaabi · TKS Dubai
