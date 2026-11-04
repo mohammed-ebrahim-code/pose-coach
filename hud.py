@@ -12,7 +12,7 @@ import cv2 as cv
 WHITE = (240, 240, 240)
 GREY = (170, 170, 170)
 DARK = (22, 22, 22)
-GREEN = (123, 198, 122)    # green (#7BC67A)
+GREEN = (123, 198, 122)    # same green as the presentation (#7BC67A)
 RED = (53, 107, 255)       # orange-red (#FF6B35)
 AMBER = (65, 184, 245)     # warning yellow (#F5B841)
 BLUE = (247, 195, 79)      # tracked arm (#4FC3F7)
@@ -68,7 +68,7 @@ def degree(img, words, x, y, size, color, weight=1, center=False):
 def draw_skeleton(frame, points, connections, highlight=(), body_line=None, body_ok=True):
     """points: {landmark index: (x, y)} for the visible joints only.
     highlight: connections drawn thicker in blue (the arm being tracked).
-    body_line: (shoulder, hip, ankle) pixel points, drawn green when straight, red when sagging."""
+    body_line: (shoulder, hip, ankle) pixel points, drawn green when straight, red when not (sagging or piking)."""
     s = scale_of(frame)
     for a, b in connections:
         if a in points and b in points:
@@ -96,7 +96,7 @@ def draw_hud(frame, info):
       angle              elbow angle being counted, or None
       body_angle         current body angle, or None
       sag_angle, down, up    thresholds (for colours and the gauge)
-      feedback           "good", "bad" or None (shown for 1 second by main.py)
+      feedback           "good", "sag", "pike" or None (shown for 1 second by main.py)
       warning            text to show when the body isn't visible, or None
       elbow_pos          (x, y) of the tracked elbow on the shown (flipped) frame, or None
     """
@@ -119,13 +119,13 @@ def draw_hud(frame, info):
 
     banner = None
     if info["feedback"] is not None or info["warning"] is not None:
-        words = {"good": "GOOD REP", "bad": "HIPS SAGGING"}.get(info["feedback"], info["warning"])
+        words = {"good": "GOOD REP", "sag": "HIPS SAGGING", "pike": "HIPS TOO HIGH"}.get(info["feedback"], info["warning"])
         size = 1.2 if info["feedback"] else 0.85
         bw = text_width(frame, words, size, 2) + int(64 * s)
         bh = int(70 * s)
         bx = w // 2 - bw // 2
         by = m + int(214 * s)  # upper middle: in a side-view push-up the body fills the lower half
-        color = {"good": GREEN, "bad": RED}.get(info["feedback"], AMBER)
+        color = {"good": GREEN, "sag": RED, "pike": RED}.get(info["feedback"], AMBER)
         banner = (bx, by, bx + bw, by + bh, words, size, color)
         rounded_rect(overlay, bx, by, bx + bw, by + bh, color, bh // 2)
 

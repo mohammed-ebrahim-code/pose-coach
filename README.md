@@ -3,7 +3,7 @@
 Pose Coach watches push-ups from the side through a webcam or a video file. It counts only **full** reps and flags reps where the **hips sag**. I built it from scratch in Python for my replicate project at TKS (The Knowledge Society) Dubai.
 
 
-▶ **[Watch the 3-minute demo video](https://www.youtube.com/watch?v=xId2xa9K3IY)**
+▶ **[Watch the 3-minute demo video](https://www.youtube.com/watch?v=a5r4rERfAKU)**
 
 ## Results
 
@@ -74,12 +74,15 @@ python main.py
 ## Credits
 
 - **Pose model:** [Google MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker) (Apache 2.0)
-- The pose logic, angle math, rep counter and form check are my own work. The on-screen display (`hud.py`) and the recording and logging features were built with AI assistance.
+- The pose logic, angle math, rep counter and form check are my own work. The on-screen display (`hud.py`) was built with AI assistance.
 
 ## Read more
 
 - Learn article: [Your Camera as a Coach](https://medium.com/@m.ebrahim.alzaabi/your-camera-as-a-coach-how-ai-pose-estimation-could-help-beginners-train-with-correct-form-325d17dc24f6)
 - Replicate article: (Soon)
-- Demo video: [YouTube](https://www.youtube.com/watch?v=xId2xa9K3IY)
+- Demo video: [YouTube](https://www.youtube.com/watch?v=a5r4rERfAKU)
 
 Mohammed Ebrahim AlZaabi · TKS Dubai
+## Notes
+- Built from Google's MediaPipe Pose Landmarker guide for Python.
+- This is a student project, not medical advice. Stop if anything hurts.

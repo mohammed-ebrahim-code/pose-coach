@@ -23,6 +23,17 @@ def calculate_angle(a, b, c):
     return angle_degree
 
 
+def hip_position(shoulder, hip, ankle):
+    """Is the hip above or below the straight line from shoulder to ankle?
+    Returns "below" (hips sagging), "above" (hips piking) or None (can't tell)."""
+    if ankle[0] == shoulder[0]:
+        return None  # the body is vertical, so this isn't a push-up position
+    # height of the shoulder-ankle line at the hip's x position
+    line_y = shoulder[1] + (ankle[1] - shoulder[1]) * (hip[0] - shoulder[0]) / (ankle[0] - shoulder[0])
+    # in images, y grows DOWNWARD, so a bigger y means lower on the screen
+    return "below" if hip[1] > line_y else "above"
+
+
 def to_pixel(landmark, width, height):
     pixel_x = int(landmark.x * width)
     pixel_y = int(landmark.y * height)
@@ -39,7 +50,7 @@ OUTPUT_FPS = 30              # frame rate of the saved webcam video
 
 DOWN = 90                    # elbow below this = bottom of the rep
 UP = 160                     # elbow back above this = rep counted
-SAG_ANGLE = 155              # lowest body angle below this = hips sagging
+SAG_ANGLE = 155              # lowest body angle below this = hips not straight (sagging or piking)
 BODY_CHECK_ANGLE = 130       # only judge the body once the elbow is below this
 VISIBILITY = 0.5             # ignore joints the model is less sure about than this
 FEEDBACK_SECONDS = 1         # how long GOOD REP / HIPS SAGGING stays on screen
@@ -76,6 +87,7 @@ good_reps = 0
 bad_reps = 0
 stage = "up"
 lowest_body_angle = 1000
+lowest_hip = None            # "below" or "above" the shoulder-ankle line at the lowest body angle
 time_end_rep = -100
 last_rep = None
 fps = 0
@@ -175,8 +187,9 @@ with PoseLandmarker.create_from_options(options) as landmarker:
                 an = np.array(to_pixel(landmarks[ankle], width, height))
                 body_angle = round(calculate_angle(s, hp, an))
                 # only judge the body during a real rep, not while setting up or resting at the top
-                if angle is not None and angle < BODY_CHECK_ANGLE:
-                    lowest_body_angle = min(body_angle, lowest_body_angle)
+                if angle is not None and angle < BODY_CHECK_ANGLE and body_angle < lowest_body_angle:
+                    lowest_body_angle = body_angle
+                    lowest_hip = hip_position(s, hp, an)
                 body_visible = True
                 body_line = (tuple(s), tuple(hp), tuple(an))
 
@@ -187,16 +200,17 @@ with PoseLandmarker.create_from_options(options) as landmarker:
                 stage = "up"
                 if lowest_body_angle < SAG_ANGLE:
                     bad_reps += 1
-                    last_rep = "bad"
+                    last_rep = "pike" if lowest_hip == "above" else "sag"
                 else:
                     good_reps += 1
                     last_rep = "good"
                 rep_number = good_reps + bad_reps
-                print(f"Rep {rep_number}: {last_rep}, lowest body angle {lowest_body_angle}")
+                print(f"Rep {rep_number}: {last_rep}, lowest body angle {lowest_body_angle}, hip {lowest_hip}")
                 if log_file:
                     log.writerow([rep_number, last_rep, lowest_body_angle, round(t, 2)])
                     log_file.flush()
                 lowest_body_angle = 1000
+                lowest_hip = None
                 time_end_rep = t
 
         hud.draw_skeleton(frame, points, CONNECTIONS, highlight, body_line,
@@ -245,6 +259,7 @@ with PoseLandmarker.create_from_options(options) as landmarker:
             bad_reps = 0
             stage = "up"
             lowest_body_angle = 1000
+            lowest_hip = None
             last_rep = None
 
 cap.release()
